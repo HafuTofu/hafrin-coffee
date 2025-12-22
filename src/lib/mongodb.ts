@@ -25,7 +25,8 @@ export async function connectDB() {
     
   const db = await mongoose.connect(MONGODB_URI, {
       dbName: "hafrincoffee",
-      serverSelectionTimeoutMS: 500, // 500ms timeout
+      // Allow more time for cluster handshake, especially from CI/Vercel
+      serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       maxPoolSize: 10,
       minPoolSize: 1,
