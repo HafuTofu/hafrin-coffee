@@ -52,8 +52,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       console.log("🔍 Fetching cart for user:", user._id)
       
-  const data = await fetchJson<ApiResponse>(`/controller/cart?idUser=${user._id}`, { timeoutMs: 500, retries: 120 })
-      
+      const start = Date.now();
+  const data = await fetchJson<ApiResponse>(`/controller/cart?idUser=${user._id}`, { timeoutMs: 3000, retries: 2 })
+      console.log("⏱ fetchCart duration (ms):", Date.now() - start);
       console.log("📦 Cart data received:", data)
       
       if (data.success && data.cart?.items) {

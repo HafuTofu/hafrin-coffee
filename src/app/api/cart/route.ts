@@ -17,13 +17,17 @@ export async function GET(req: Request) {
 			return NextResponse.json({ success: false, error: "Invalid or missing idUser" }, { status: 400 });
 		}
 
+		const start = Date.now();
 		await connectDB();
+		const connectedAt = Date.now();
 
 		let cart = await Cart.findOne({ idUser }).populate({
 			path: 'items.idProduct',
 			model: 'Menu',
 			select: 'name price pic'
 		});
+		const fetchedAt = Date.now();
+		console.log(`GET /controller/cart timings (ms): connect=${connectedAt - start}, query=${fetchedAt - connectedAt}, total=${fetchedAt - start}`);
 
 		return NextResponse.json({ success: true, cart });
 	} catch (err) {
