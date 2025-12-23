@@ -33,9 +33,41 @@ export default function SuccesspayClient({ loadingOnly = false }: Props) {
   const [time, setTime] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [verified, setVerified] = useState<boolean | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+
   useEffect(() => {
     // optionally, if you want to pre-fill user info you can fetch /controller/user
-  }, []);
+    // Verify payment status for this order when we load the page
+    async function verify() {
+      if (!orderId) return;
+      setChecking(true);
+      try {
+        const res = await fetch(`/api/midtrans/verify?orderId=${encodeURIComponent(orderId)}`);
+        const data = await res.json().catch(() => ({})) as any;
+        if (res.ok && data.success) {
+          setVerified(Boolean(data.verified));
+          setPaymentStatus(data.paymentStatus || null);
+          if (data.verified) {
+            toast.success('Payment confirmed');
+          } else {
+            toast('Payment not yet confirmed — we will verify again shortly');
+          }
+        } else {
+          console.warn('Verify returned non-ok', data);
+          toast.error('Failed to verify payment');
+        }
+      } catch (err) {
+        console.error('Error verifying payment', err);
+        toast.error('Error verifying payment');
+      } finally {
+        setChecking(false);
+      }
+    }
+
+    void verify();
+  }, [orderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +103,48 @@ export default function SuccesspayClient({ loadingOnly = false }: Props) {
     }
   }
 
+  const handleCheckStatus = async () => {
+    if (!orderId) return;
+    setChecking(true);
+    try {
+      const res = await fetch(`/api/midtrans/verify?orderId=${encodeURIComponent(orderId)}`);
+      const data = await res.json().catch(() => ({})) as any;
+      if (res.ok && data.success) {
+        setVerified(Boolean(data.verified));
+        setPaymentStatus(data.paymentStatus || null);
+        if (data.verified) toast.success('Payment confirmed');
+        else toast('Payment still not confirmed');
+      } else {
+        toast.error('Failed to verify payment');
+      }
+    } catch (err) {
+      console.error('Error checking status', err);
+      toast.error('Error checking status');
+    } finally {
+      setChecking(false);
+    }
+  }
+
   return (
     <>
       <Navbar bgClass="bg-background" />
       <main className="mx-auto max-w-xl p-6">
         <h1 className="text-2xl font-semibold mb-4">Complete Delivery Details</h1>
         <p className="text-sm text-muted-foreground mb-4">Please provide delivery name, phone, address and preferred time to deliver your order. Order ID: <span className="font-mono">{orderId || 'N/A'}</span></p>
+
+        {/* Verification status */}
+        {verified === true ? (
+          <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800">Payment confirmed — you can complete delivery details below.</div>
+        ) : verified === false ? (
+          <div className="mb-4 rounded-md bg-yellow-50 p-3 text-sm text-yellow-800 flex items-center justify-between">
+            <div>Payment not yet confirmed. You can still provide delivery info but we'll notify you when confirmed.</div>
+            <div className="ml-4">
+              <Button size="sm" variant="outline" onClick={handleCheckStatus} disabled={checking}>{checking ? 'Checking...' : 'Check status'}</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 rounded-md bg-muted/20 p-3 text-sm">Checking payment status…</div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
