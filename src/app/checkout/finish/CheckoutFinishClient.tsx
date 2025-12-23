@@ -33,11 +33,14 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
 
     const orderId = paramsObj.order_id || paramsObj.orderId || paramsObj.id || '';
     const transaction_status = paramsObj.transaction_status || paramsObj.transactionStatus || paramsObj.status || '';
+    console.log('CheckoutFinish paramsObj:', paramsObj, 'resolved transaction_status:', transaction_status, 'orderId:', orderId);
 
     async function doPost() {
       const successStatuses = ['capture', 'settlement'];
       try {
-        setProcessing(true);        // Post the query params to our callback handler as the server would do
+        setProcessing(true);
+        console.log('Posting to /api/midtrans/callback with transaction_status:', transaction_status);
+        // Post the query params to our callback handler as the server would do
         const res = await fetch('/api/midtrans/callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -46,9 +49,10 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
 
         if (!res.ok) {
           const txt = await res.text().catch(() => '');
-          console.warn('Callback endpoint returned non-OK', res.status, txt);
+          console.warn('Callback endpoint returned non-OK', res.status, txt, 'transaction_status:', transaction_status);
           // If the callback failed but transaction status indicates success, proceed to Successpay
           if (transaction_status && successStatuses.includes(transaction_status)) {
+            console.log('Non-OK callback but transaction_status indicates success -> redirecting to Successpay');
             toast.success('Payment confirmed (client-side). Redirecting to success page.');
             router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
             return;
@@ -58,19 +62,23 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
 
         // Decide redirect target based on transaction_status
         if (transaction_status && successStatuses.includes(transaction_status)) {
+          console.log('transaction_status is success -> redirecting to Successpay');
           router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
           return;
         }
 
+        console.log('transaction_status not successful -> redirecting to Errorpay', transaction_status);
         router.replace(`/Errorpay?order_id=${encodeURIComponent(orderId)}&status=${encodeURIComponent(transaction_status)}`);
       } catch (e: any) {
-        console.error('Client callback/post failed', e);
+        console.error('Client callback/post failed', e, 'transaction_status:', transaction_status, 'orderId:', orderId);
         setError(String(e?.message || e));
         // If transaction status indicates success, proceed to success page even if callback failed
         if (transaction_status && successStatuses.includes(transaction_status)) {
+          console.log('Catch: transaction_status indicates success -> redirecting to Successpay');
           toast.success('Payment confirmed (client-side). Redirecting to success page.');
           router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
         } else {
+          console.log('Catch: redirecting to Errorpay');
           toast.error('Payment processing error. Redirecting to error page.');
           // fallback redirect so user sees the error page
           const orderId = searchParams.get('order_id') || searchParams.get('orderId') || '';
