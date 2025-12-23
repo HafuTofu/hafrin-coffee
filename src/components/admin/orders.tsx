@@ -8,7 +8,8 @@ import {
   Activity,
   CheckCircle2,
   Clock,
-  Ban
+  Ban,
+  Loader2
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,11 +46,13 @@ import { Order, getStatusBadge, getStatusIcon } from "./types"
 interface OrdersContentProps {
   orders: Order[]
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>
+  onRefresh: () => Promise<void>
 }
 
-export default function OrdersContent({ orders, setOrders }: OrdersContentProps) {
+export default function OrdersContent({ orders, setOrders, onRefresh }: OrdersContentProps) {
   const [orderSearchQuery, setOrderSearchQuery] = useState("")
   const [orderStatusFilter, setOrderStatusFilter] = useState("all")
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
   // Logic Filter Orders
   const filteredOrders = orders.filter(order => {
@@ -62,13 +65,31 @@ export default function OrdersContent({ orders, setOrders }: OrdersContentProps)
     return matchesSearch && matchesStatus
   })
 
-  // Order Handler
-  const handleOrderStatusChange = (orderId: string, newStatus: string) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    )
+  // Order Handler - Update status via API
+  const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
+    setUpdatingOrderId(orderId)
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        )
+      } else {
+        alert("Failed to update order status: " + data.error)
+      }
+    } catch (error) {
+      console.error("Update order error:", error)
+      alert("Failed to update order status")
+    } finally {
+      setUpdatingOrderId(null)
+    }
   }
 
   return (
@@ -148,6 +169,11 @@ export default function OrdersContent({ orders, setOrders }: OrdersContentProps)
                             
                             {/* --- DROPDOWN ACTION --- */}
                             <TableCell className="text-right">
+                            {updatingOrderId === order.id ? (
+                              <div className="flex justify-end">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              </div>
+                            ) : (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100">
@@ -176,6 +202,7 @@ export default function OrdersContent({ orders, setOrders }: OrdersContentProps)
                                 </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            )}
                             </TableCell>
                             {/* ---------------------------------- */}
 

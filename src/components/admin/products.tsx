@@ -13,7 +13,8 @@ import {
   Pencil,
   Save,
   UploadCloud,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -62,10 +63,12 @@ import { Dispatch, SetStateAction } from "react"
 interface ProductsContentProps {
   products: Product[]
   setProducts: Dispatch<SetStateAction<Product[]>>
+  onRefresh: () => Promise<void>
 }
 
-export default function ProductsContent({ products, setProducts }: ProductsContentProps) {
+export default function ProductsContent({ products, setProducts, onRefresh }: ProductsContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   // --- STATE UNTUK MODAL EDIT & VIEW ---
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -89,9 +92,25 @@ export default function ProductsContent({ products, setProducts }: ProductsConte
   )
 
   // Product Handlers
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this item?")) {
-      setProducts(products.filter(p => p.id !== id))
+      setIsSubmitting(true)
+      try {
+        const res = await fetch(`/api/admin/menus?id=${id}`, {
+          method: "DELETE"
+        })
+        const data = await res.json()
+        if (data.success) {
+          setProducts(products.filter(p => p.id !== id))
+        } else {
+          alert("Failed to delete product: " + data.error)
+        }
+      } catch (error) {
+        console.error("Delete error:", error)
+        alert("Failed to delete product")
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -105,10 +124,36 @@ export default function ProductsContent({ products, setProducts }: ProductsConte
     setIsEditOpen(true)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!selectedProduct) return
-    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? selectedProduct : p))
-    setIsEditOpen(false)
+    setIsSubmitting(true)
+    try {
+      const res = await fetch("/api/admin/menus", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          category: selectedProduct.category,
+          price: selectedProduct.price,
+          status: selectedProduct.status,
+          description: selectedProduct.description,
+          image: selectedProduct.image
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setProducts(prev => prev.map(p => p.id === selectedProduct.id ? data.product : p))
+        setIsEditOpen(false)
+      } else {
+        alert("Failed to update product: " + data.error)
+      }
+    } catch (error) {
+      console.error("Update error:", error)
+      alert("Failed to update product")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,22 +164,35 @@ export default function ProductsContent({ products, setProducts }: ProductsConte
     }
   }
 
-  const handleAddProduct = () => {
-    const id = (products.length + 1).toString()
-    const productToAdd: Product = {
-      id,
-      name: newProduct.name || "New Product",
-      category: newProduct.category || "Coffee",
-      price: newProduct.price || 0,
-      status: newProduct.status || "Active",
-      sales: 0, 
-      description: newProduct.description || "",
-      image: newProduct.image || ""
+  const handleAddProduct = async () => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch("/api/admin/menus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProduct.name || "New Product",
+          category: newProduct.category || "Coffee",
+          price: newProduct.price || 0,
+          status: newProduct.status || "Active",
+          description: newProduct.description || "",
+          image: newProduct.image || ""
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setProducts([...products, data.product])
+        setIsAddOpen(false)
+        setNewProduct({ name: "", category: "Coffee", price: 0, status: "Active", description: "", image: "" })
+      } else {
+        alert("Failed to add product: " + data.error)
+      }
+    } catch (error) {
+      console.error("Add error:", error)
+      alert("Failed to add product")
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setProducts([...products, productToAdd])
-    setIsAddOpen(false)
-    setNewProduct({ name: "", category: "Coffee", price: 0, status: "Active", description: "", image: "" })
   }
 
   return (
@@ -410,9 +468,9 @@ export default function ProductsContent({ products, setProducts }: ProductsConte
                 )}
 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSaveEdit} className="bg-green-500 hover:bg-green-600 text-white">
-                    <Save className="mr-2 h-4 w-4" /> Save Changes
+                    <Button variant="ghost" onClick={() => setIsEditOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                    <Button onClick={handleSaveEdit} disabled={isSubmitting} className="bg-green-500 hover:bg-green-600 text-white">
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Changes
                     </Button>
                 </DialogFooter>
                 </DialogContent>
@@ -525,9 +583,9 @@ export default function ProductsContent({ products, setProducts }: ProductsConte
                 </div>
 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddProduct} className=" bg-green-500 text-primary-foreground hover:bg-green-600">
-                    Save Product
+                    <Button variant="ghost" onClick={() => setIsAddOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                    <Button onClick={handleAddProduct} disabled={isSubmitting} className=" bg-green-500 text-primary-foreground hover:bg-green-600">
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Product
                     </Button>
                 </DialogFooter>
                 </DialogContent>

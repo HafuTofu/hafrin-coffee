@@ -5,6 +5,9 @@ export interface IMenu {
   price: number;
   description?: string;
   pic?: string;
+  category?: string;
+  status?: string;
+  sales?: number;
 }
 
 export interface MenuDocument extends IMenu, Document {
@@ -19,6 +22,9 @@ const MenuSchema = new mongoose.Schema<MenuDocument, MenuModel>(
     price: { type: Number, required: true },
     description: { type: String },
     pic: { type: String },
+    category: { type: String, default: "Coffee" },
+    status: { type: String, default: "Active" },
+    sales: { type: Number, default: 0 },
   },
   { collection: "menus" }
 );

@@ -17,14 +17,23 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { TabsContent } from "@/components/ui/tabs"
-import { Product, Order, monthlyOrdersData } from "./types"
+import { Product, Order, DashboardStats } from "./types"
 
 interface DashboardOverviewProps {
   products: Product[]
   orders: Order[]
+  stats: DashboardStats
 }
 
-export default function DashboardOverview({ products, orders }: DashboardOverviewProps) {
+export default function DashboardOverview({ products, orders, stats }: DashboardOverviewProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("id-ID", { 
+      style: "currency", 
+      currency: "IDR", 
+      maximumFractionDigits: 0 
+    }).format(value)
+  }
+
   return (
     <motion.div
         key="overview"
@@ -35,10 +44,42 @@ export default function DashboardOverview({ products, orders }: DashboardOvervie
     >
         <TabsContent value="overview" className="space-y-6 mt-0">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Revenue" value="Rp 4.200.000" icon={DollarSign} trend="+20.1%" trendUp={true} color="text-green-600" bgColor="bg-green-100" />
-            <StatCard title="Active Orders" value="12" icon={ShoppingBag} trend="+2 new" trendUp={true} color="text-blue-600" bgColor="bg-blue-100" />
-            <StatCard title="Total Products" value={products.length.toString()} icon={Package} trend="In Catalog" trendUp={true} color="text-orange-600" bgColor="bg-orange-100" />
-            <StatCard title="Total Customers" value="573" icon={Users} trend="+201 this week" trendUp={true} color="text-purple-600" bgColor="bg-purple-100" />
+            <StatCard 
+              title="Total Revenue" 
+              value={formatCurrency(stats.totalRevenue)} 
+              icon={DollarSign} 
+              trend={stats.revenueTrend} 
+              trendUp={stats.revenueTrend.startsWith("+")} 
+              color="text-green-600" 
+              bgColor="bg-green-100" 
+            />
+            <StatCard 
+              title="Active Orders" 
+              value={stats.activeOrders.toString()} 
+              icon={ShoppingBag} 
+              trend={`${orders.filter(o => o.status === "Pending").length} pending`} 
+              trendUp={true} 
+              color="text-blue-600" 
+              bgColor="bg-blue-100" 
+            />
+            <StatCard 
+              title="Total Products" 
+              value={stats.totalProducts.toString()} 
+              icon={Package} 
+              trend="In Catalog" 
+              trendUp={true} 
+              color="text-orange-600" 
+              bgColor="bg-orange-100" 
+            />
+            <StatCard 
+              title="Total Customers" 
+              value={stats.totalCustomers.toString()} 
+              icon={Users} 
+              trend="Registered users" 
+              trendUp={true} 
+              color="text-purple-600" 
+              bgColor="bg-purple-100" 
+            />
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
@@ -48,7 +89,12 @@ export default function DashboardOverview({ products, orders }: DashboardOvervie
                 <CardDescription>Total number of orders placed per month.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 pl-2">
-                    <CustomBarChart data={monthlyOrdersData} />
+                    <CustomBarChart data={stats.monthlyOrdersData.length > 0 ? stats.monthlyOrdersData : [
+                      { name: "Jan", total: 0 }, { name: "Feb", total: 0 }, { name: "Mar", total: 0 },
+                      { name: "Apr", total: 0 }, { name: "May", total: 0 }, { name: "Jun", total: 0 },
+                      { name: "Jul", total: 0 }, { name: "Aug", total: 0 }, { name: "Sep", total: 0 },
+                      { name: "Oct", total: 0 }, { name: "Nov", total: 0 }, { name: "Dec", total: 0 },
+                    ]} />
                 </CardContent>
             </Card>
             <Card className="col-span-3 shadow-sm border-none ring-1 ring-gray-200/50">
@@ -58,7 +104,7 @@ export default function DashboardOverview({ products, orders }: DashboardOvervie
                 </CardHeader>
                 <CardContent>
                 <div className="space-y-8">
-                    {orders.slice(0, 5).map((order) => (
+                    {orders.length > 0 ? orders.slice(0, 5).map((order) => (
                     <div key={order.id} className="flex items-center group">
                         <div className="space-y-1">
                         <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">{order.customer}</p>
@@ -68,7 +114,9 @@ export default function DashboardOverview({ products, orders }: DashboardOvervie
                         +{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(order.total)}
                         </div>
                     </div>
-                    ))}
+                    )) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No orders yet</p>
+                    )}
                 </div>
                 </CardContent>
             </Card>

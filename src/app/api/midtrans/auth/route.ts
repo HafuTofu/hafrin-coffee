@@ -19,12 +19,15 @@ export async function POST(req: Request) {
 
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
     const baseUrl = process.env.MIDTRANS_BASE_URL || 'https://app.sandbox.midtrans.com';
+    
+    // Get the app URL for redirects (localhost for dev, production URL for prod)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
 
     if (!serverKey) {
       return NextResponse.json({ success: false, error: 'MIDTRANS_SERVER_KEY not configured' }, { status: 500 });
     }
 
-    // Build payload for Snap API
+    // Build payload for Snap API with callbacks
     const payload: any = {
       transaction_details: {
         order_id: String(orderId),
@@ -32,6 +35,11 @@ export async function POST(req: Request) {
       },
       item_details: items || [],
       customer_details: customer || {},
+      callbacks: {
+        finish: `${appUrl}/Successpay?order_id=${orderId}`,
+        error: `${appUrl}/Errorpay?order_id=${orderId}`,
+        pending: `${appUrl}/Successpay?order_id=${orderId}&status=pending`
+      }
     };
 
     const auth = Buffer.from(`${serverKey}:`).toString('base64');

@@ -15,9 +15,35 @@ export type Product = {
 export type Order = {
   id: string
   customer: string
+  email?: string
   total: number
   status: string
+  paymentStatus?: string
+  deliveryStatus?: string
   date: string
+  items?: {
+    name: string
+    quantity: number
+    price: number
+    sugar?: string
+    ice?: string
+    additions?: string[]
+  }[]
+  deliveryInfo?: {
+    name?: string
+    phone?: string
+    address?: string
+    time?: string
+  }
+}
+
+export type DashboardStats = {
+  totalRevenue: number
+  activeOrders: number
+  totalProducts: number
+  totalCustomers: number
+  revenueTrend: string
+  monthlyOrdersData: { name: string; total: number }[]
 }
 
 // --- Helper for Status Color ---
@@ -64,72 +90,14 @@ export const getStatusIcon = (status: string) => {
   }
 }
 
-// --- Mock Data Products ---
-export const initialProducts: Product[] = [
-  { 
-    id: "1", 
-    name: "Aren Latte", 
-    category: "Coffee", 
-    price: 18000, 
-    status: "Active", 
-    sales: 1240, 
-    description: "Signature coffee with authentic palm sugar.",
-    image: "./aren latte.png" 
-  },
-  { 
-    id: "2", 
-    name: "Moccachino", 
-    category: "Coffee", 
-    price: 15000, 
-    status: "Active", 
-    sales: 856, 
-    description: "Rich espresso with chocolate flavor.",
-    image: "./mocca.png"
-  },
-  { 
-    id: "3", 
-    name: "Matcha", 
-    category: "Non-Coffee", 
-    price: 22000, 
-    status: "Active", 
-    sales: 2101, 
-    description: "Premium matcha powder imported from Japan.",
-    image: "./matcha.png" 
-  },
-  { 
-    id: "4", 
-    name: "Cappuccino", 
-    category: "Coffee", 
-    price: 24000, 
-    status: "Active", 
-    sales: 504, 
-    description: "Espresso with steamed milk foam.",
-    image: "./latte cappu.png"
-  },
-  { 
-    id: "5", 
-    name: "Butterscotch", 
-    category: "Coffee", 
-    price: 18000, 
-    status: "Active", 
-    sales: 0, 
-    description: "Sweet and creamy butterscotch flavor.",
-    image: "./bs.png" 
-  },
-]
-
-// --- Mock Data Orders ---
-export const initialOrders: Order[] = [
-  { id: "ORD-001", customer: "Budi Santoso", total: 40000, status: "Completed", date: "Today" },
-  { id: "ORD-002", customer: "Siti Aminah", total: 22000, status: "Pending", date: "Today" },
-  { id: "ORD-003", customer: "Rizky Code", total: 18000, status: "Processing", date: "Tuesday" },
-  { id: "ORD-004", customer: "Dewi Lestari", total: 56000, status: "Completed", date: "Tuesday" },
-  { id: "ORD-005", customer: "Micka Shivi", total: 56000, status: "Completed", date: "Monday" },
-]
-
+// Monthly orders data will be fetched from API
 export const monthlyOrdersData = [
-  { name: "Jan", total: 45 }, { name: "Feb", total: 72 }, { name: "Mar", total: 120 },
-  { name: "Apr", total: 98 }, { name: "May", total: 150 }, { name: "Jun", total: 142 },
-  { name: "Jul", total: 185 }, { name: "Aug", total: 160 }, { name: "Sep", total: 195 },
-  { name: "Oct", total: 210 }, { name: "Nov", total: 180 }, { name: "Dec", total: 250 },
+  { name: "Jan", total: 0 }, { name: "Feb", total: 0 }, { name: "Mar", total: 0 },
+  { name: "Apr", total: 0 }, { name: "May", total: 0 }, { name: "Jun", total: 0 },
+  { name: "Jul", total: 0 }, { name: "Aug", total: 0 }, { name: "Sep", total: 0 },
+  { name: "Oct", total: 0 }, { name: "Nov", total: 0 }, { name: "Dec", total: 0 },
 ]
+
+// Empty initial data - will be fetched from database
+export const initialProducts: Product[] = []
+export const initialOrders: Order[] = []
