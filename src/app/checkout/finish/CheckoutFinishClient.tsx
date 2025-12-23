@@ -35,6 +35,14 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
     const transaction_status = paramsObj.transaction_status || paramsObj.transactionStatus || paramsObj.status || '';
     console.log('CheckoutFinish paramsObj:', paramsObj, 'resolved transaction_status:', transaction_status, 'orderId:', orderId);
 
+    // Immediate client-side success shortcut: if Midtrans already reports a success status, redirect now
+    const successStatuses = ['capture', 'settlement'];
+    if (transaction_status && successStatuses.includes(transaction_status)) {
+      console.log('Early redirect: transaction_status indicates success -> redirecting to Successpay');
+      router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
+      return;
+    }
+
     async function doPost() {
       const successStatuses = ['capture', 'settlement'];
       try {
