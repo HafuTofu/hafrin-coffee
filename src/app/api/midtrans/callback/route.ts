@@ -14,14 +14,24 @@ export async function POST(req: Request) {
     }
 
     // Midtrans typically sends these fields: order_id, status_code, gross_amount, transaction_status, signature_key
-    const { order_id, status_code, gross_amount, transaction_status, signature_key } = body || {};
+    // Normalize common variants (some clients may send camelCase keys)
+    const order_id = body?.order_id || body?.orderId || body?.id || body?.orderIdStr || null;
+    const status_code = body?.status_code || body?.statusCode || body?.status || null;
+    const gross_amount = typeof body?.gross_amount !== 'undefined' ? body.gross_amount : (typeof body?.grossAmount !== 'undefined' ? body.grossAmount : undefined);
+    const transaction_status = body?.transaction_status || body?.transactionStatus || body?.status || null;
+    const signature_key = body?.signature_key || body?.signatureKey || null;
 
     // For browser/Snap redirects some fields (e.g. gross_amount or signature_key) may be absent. We accept minimal payloads
     // from the client (order_id + status_code + transaction_status) and attempt to process them, but we prefer
     // a verified notification (signature present) when possible.
-    if (!order_id || !status_code || !transaction_status) {
-      console.warn('Midtrans callback received invalid payload', { body });
-      return NextResponse.json({ success: false, error: 'Invalid notification payload' }, { status: 400 });
+    const missing: string[] = [];
+    if (!order_id) missing.push('order_id');
+    if (!status_code) missing.push('status_code');
+    if (!transaction_status) missing.push('transaction_status');
+
+    if (missing.length > 0) {
+      console.warn('Midtrans callback received invalid payload - missing fields', { missing, body });
+      return NextResponse.json({ success: false, error: 'Invalid notification payload', missing }, { status: 400 });
     }
 
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
