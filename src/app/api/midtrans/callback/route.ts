@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     // Midtrans typically sends these fields: order_id, status_code, gross_amount, transaction_status, signature_key
     // Normalize common variants (some clients may send camelCase keys)
-    const order_id = body?.order_id || body?.orderId || body?.id || body?.orderIdStr || null;
+    const order_id = body?.order_id || body?.orderId || body?.id || body?.orderIdStr || body?._id || null;
     const status_code = body?.status_code || body?.statusCode || body?.status || null;
     const gross_amount = typeof body?.gross_amount !== 'undefined' ? body.gross_amount : (typeof body?.grossAmount !== 'undefined' ? body.grossAmount : undefined);
     const transaction_status = body?.transaction_status || body?.transactionStatus || body?.status || null;
