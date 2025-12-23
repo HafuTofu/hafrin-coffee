@@ -16,29 +16,46 @@ export async function POST(req: Request) {
     // Midtrans typically sends these fields: order_id, status_code, gross_amount, transaction_status, signature_key
     const { order_id, status_code, gross_amount, transaction_status, signature_key } = body || {};
 
-    if (!order_id || !status_code || typeof gross_amount === 'undefined' || !transaction_status) {
+    // For browser/Snap redirects some fields (e.g. gross_amount or signature_key) may be absent. We accept minimal payloads
+    // from the client (order_id + status_code + transaction_status) and attempt to process them, but we prefer
+    // a verified notification (signature present) when possible.
+    if (!order_id || !status_code || !transaction_status) {
       console.warn('Midtrans callback received invalid payload', { body });
       return NextResponse.json({ success: false, error: 'Invalid notification payload' }, { status: 400 });
     }
 
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
-    if (!serverKey) {
-      console.error('MIDTRANS_SERVER_KEY not set - cannot verify signature');
-      return NextResponse.json({ success: false, error: 'Server not configured' }, { status: 500 });
-    }
 
-    // Verify signature: sha512(order_id + status_code + gross_amount + serverKey)
-    let computed: string;
-    try {
-      computed = crypto.createHash('sha512').update(String(order_id) + String(status_code) + String(gross_amount) + serverKey).digest('hex');
-    } catch (e) {
-      console.error('Failed to compute signature', e);
-      return NextResponse.json({ success: false, error: 'Signature computation failed' }, { status: 500 });
-    }
+    // If a signature_key is provided, we must have a serverKey and gross_amount to verify. If signature is missing
+    // we will process the payload (for UX) but log that the notification was unverified.
+    if (signature_key) {
+      if (!serverKey) {
+        console.error('MIDTRANS_SERVER_KEY not set - cannot verify signature');
+        return NextResponse.json({ success: false, error: 'Server not configured' }, { status: 500 });
+      }
 
-    if (signature_key && signature_key !== computed) {
-      console.error('Invalid Midtrans signature', { provided: signature_key, computed });
-      return NextResponse.json({ success: false, error: 'Invalid signature' }, { status: 403 });
+      if (typeof gross_amount === 'undefined') {
+        console.warn('Signature present but gross_amount missing - cannot verify', { body });
+        return NextResponse.json({ success: false, error: 'Invalid notification payload' }, { status: 400 });
+      }
+
+      // Verify signature: sha512(order_id + status_code + gross_amount + serverKey)
+      let computed: string;
+      try {
+        computed = crypto.createHash('sha512').update(String(order_id) + String(status_code) + String(gross_amount) + serverKey).digest('hex');
+      } catch (e) {
+        console.error('Failed to compute signature', e);
+        return NextResponse.json({ success: false, error: 'Signature computation failed' }, { status: 500 });
+      }
+
+      if (signature_key && signature_key !== computed) {
+        console.error('Invalid Midtrans signature', { provided: signature_key, computed });
+        return NextResponse.json({ success: false, error: 'Invalid signature' }, { status: 403 });
+      }
+    } else {
+      // No signature provided; this is commonly the client (browser) posting back the query params from a redirect.
+      // Treat as an unverified notification — process for UX but mark in logs/history so it can be reconciled later.
+      console.info('Midtrans callback: no signature provided, processing as unverified (likely browser redirect)', { order_id, status_code, transaction_status });
     }
 
     // Map transaction_status to our Order.paymentStatus and deliveryStatus actions
@@ -65,7 +82,8 @@ export async function POST(req: Request) {
       // Update payment status and push history
       order.paymentStatus = paymentStatus;
       order.statusHistory = order.statusHistory || [];
-      order.statusHistory.push({ status: `midtrans:${transaction_status}`, timestamp: new Date() });
+      const histStatus = signature_key ? `midtrans:${transaction_status}` : `midtrans:unverified:${transaction_status}`;
+      order.statusHistory.push({ status: histStatus, timestamp: new Date() });
 
       // If payment succeeded, mark delivery as preparing and remove items from user's cart
       if (paymentStatus === 'paid') {
