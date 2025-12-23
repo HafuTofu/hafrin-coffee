@@ -15,13 +15,14 @@ export function middleware(req: NextRequest) {
       if (orderId && txStatus) {
         // If a transaction status is present, decide server-side redirect for better UX (avoids relying on client JS)
         const successStatuses = ['capture', 'settlement'];
-        if (successStatuses.includes(txStatus)) {
+        const txNormalized = String(txStatus || '').toLowerCase().trim();
+        if (successStatuses.includes(txNormalized)) {
           const dest = new URL(`/Successpay${url.search}`, url.origin);
-          console.log('Middleware: redirecting to Successpay', { orderId, txStatus });
+          console.log('Middleware: redirecting to Successpay', { orderId, txStatus: txNormalized });
           return NextResponse.redirect(dest);
         } else {
           const dest = new URL(`/Errorpay${url.search}`, url.origin);
-          console.log('Middleware: redirecting to Errorpay', { orderId, txStatus });
+          console.log('Middleware: redirecting to Errorpay', { orderId, txStatus: txNormalized });
           return NextResponse.redirect(dest);
         }
       }

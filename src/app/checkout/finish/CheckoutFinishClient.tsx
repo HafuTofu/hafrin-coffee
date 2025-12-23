@@ -32,13 +32,18 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
     for (const [k, v] of searchParams.entries()) paramsObj[k] = v;
 
     const orderId = paramsObj.order_id || paramsObj.orderId || paramsObj.id || '';
-    const transaction_status = paramsObj.transaction_status || paramsObj.transactionStatus || paramsObj.status || '';
-    console.log('CheckoutFinish paramsObj:', paramsObj, 'resolved transaction_status:', transaction_status, 'orderId:', orderId);
+    const raw_tx = paramsObj.transaction_status || paramsObj.transactionStatus || paramsObj.status || '';
+    const status_code = paramsObj.status_code || paramsObj.statusCode || paramsObj.statusCode || '';
+    const transaction_status = String(raw_tx || '').toLowerCase().trim();
+    console.log('CheckoutFinish paramsObj:', paramsObj, 'resolved transaction_status:', transaction_status, 'status_code:', status_code, 'orderId:', orderId);
 
-    // Immediate client-side success shortcut: if Midtrans already reports a success status, redirect now
+    // Immediate client-side success shortcut: if Midtrans reports a success status (case-insensitive), redirect now.
     const successStatuses = ['capture', 'settlement'];
-    if (transaction_status && successStatuses.includes(transaction_status)) {
-      console.log('Early redirect: transaction_status indicates success -> redirecting to Successpay');
+    const txLooksSuccessful = transaction_status && successStatuses.includes(transaction_status);
+    const statusCodeFallback = !transaction_status && String(status_code) === '200';
+
+    if (txLooksSuccessful || statusCodeFallback) {
+      console.log('Early redirect: transaction_status/status_code indicates success -> redirecting to Successpay', { txLooksSuccessful, statusCodeFallback });
       router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
       return;
     }
@@ -57,11 +62,18 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
 
         if (!res.ok) {
           const txt = await res.text().catch(() => '');
-          console.warn('Callback endpoint returned non-OK', res.status, txt, 'transaction_status:', transaction_status);
+          console.warn('Callback endpoint returned non-OK', res.status, txt, 'transaction_status:', transaction_status, 'status_code:', status_code);
           // If the callback failed but transaction status indicates success, proceed to Successpay
           if (transaction_status && successStatuses.includes(transaction_status)) {
             console.log('Non-OK callback but transaction_status indicates success -> redirecting to Successpay');
             toast.success('Payment confirmed (client-side). Redirecting to success page.');
+            router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
+            return;
+          }
+          // Fallback: if no transaction_status but status_code is 200, treat as success for UX
+          if (!transaction_status && String(status_code) === '200') {
+            console.log('Non-OK callback but status_code==200 and no transaction_status -> redirecting to Successpay (fallback)');
+            toast.success('Payment confirmed (client-side, fallback). Redirecting to success page.');
             router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
             return;
           }
@@ -75,14 +87,20 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
           return;
         }
 
-        console.log('transaction_status not successful -> redirecting to Errorpay', transaction_status);
-        router.replace(`/Errorpay?order_id=${encodeURIComponent(orderId)}&status=${encodeURIComponent(transaction_status)}`);
+        if (!transaction_status && String(status_code) === '200') {
+          console.log('status_code==200 and no transaction_status -> redirecting to Successpay (fallback)');
+          router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
+          return;
+        }
+
+        console.log('transaction_status not successful -> redirecting to Errorpay', transaction_status, 'status_code:', status_code);
+        router.replace(`/Errorpay?order_id=${encodeURIComponent(orderId)}&status=${encodeURIComponent(transaction_status || status_code)}`);
       } catch (e: any) {
-        console.error('Client callback/post failed', e, 'transaction_status:', transaction_status, 'orderId:', orderId);
+        console.error('Client callback/post failed', e, 'transaction_status:', transaction_status, 'status_code:', status_code, 'orderId:', orderId);
         setError(String(e?.message || e));
-        // If transaction status indicates success, proceed to success page even if callback failed
-        if (transaction_status && successStatuses.includes(transaction_status)) {
-          console.log('Catch: transaction_status indicates success -> redirecting to Successpay');
+        // If transaction status or status_code indicates success, proceed to success page even if callback failed
+        if ((transaction_status && successStatuses.includes(transaction_status)) || (!transaction_status && String(status_code) === '200')) {
+          console.log('Catch: tx/status indicates success -> redirecting to Successpay');
           toast.success('Payment confirmed (client-side). Redirecting to success page.');
           router.replace(`/Successpay?order_id=${encodeURIComponent(orderId)}`);
         } else {
