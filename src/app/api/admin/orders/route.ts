@@ -46,7 +46,7 @@ export async function GET() {
 // PUT: Update order status
 export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as { orderId?: string; status?: string };
     const { orderId, status } = body;
 
     if (!orderId || !status) {

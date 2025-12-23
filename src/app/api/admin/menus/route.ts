@@ -33,7 +33,7 @@ export async function GET() {
 // POST: Create a new menu item
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as { name?: string; category?: string; price?: number; status?: string; description?: string; image?: string };
     const { name, category, price, status, description, image } = body;
 
     if (!name || !price) {
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 // PUT: Update an existing menu item
 export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as { id?: string; name?: string; category?: string; price?: number; status?: string; description?: string; image?: string };
     const { id, name, category, price, status, description, image } = body;
 
     if (!id) {

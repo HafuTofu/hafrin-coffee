@@ -74,7 +74,7 @@ export default function OrdersContent({ orders, setOrders, onRefresh }: OrdersCo
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, status: newStatus })
       })
-      const data = await res.json()
+      const data = await res.json() as { success: boolean; error?: string }
       if (data.success) {
         setOrders(prevOrders => 
           prevOrders.map(order => 

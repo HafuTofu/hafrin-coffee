@@ -99,7 +99,7 @@ export default function ProductsContent({ products, setProducts, onRefresh }: Pr
         const res = await fetch(`/api/admin/menus?id=${id}`, {
           method: "DELETE"
         })
-        const data = await res.json()
+        const data = await res.json() as { success: boolean; error?: string }
         if (data.success) {
           setProducts(products.filter(p => p.id !== id))
         } else {
@@ -141,9 +141,9 @@ export default function ProductsContent({ products, setProducts, onRefresh }: Pr
           image: selectedProduct.image
         })
       })
-      const data = await res.json()
-      if (data.success) {
-        setProducts(prev => prev.map(p => p.id === selectedProduct.id ? data.product : p))
+      const data = await res.json() as { success: boolean; product?: Product; error?: string }
+      if (data.success && data.product) {
+        setProducts(prev => prev.map(p => p.id === selectedProduct.id ? data.product! : p))
         setIsEditOpen(false)
       } else {
         alert("Failed to update product: " + data.error)
@@ -179,8 +179,8 @@ export default function ProductsContent({ products, setProducts, onRefresh }: Pr
           image: newProduct.image || ""
         })
       })
-      const data = await res.json()
-      if (data.success) {
+      const data = await res.json() as { success: boolean; product?: Product; error?: string }
+      if (data.success && data.product) {
         setProducts([...products, data.product])
         setIsAddOpen(false)
         setNewProduct({ name: "", category: "Coffee", price: 0, status: "Active", description: "", image: "" })
