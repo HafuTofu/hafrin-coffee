@@ -1,13 +1,13 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { User, Lock, Eye, EyeOff, Mail, Phone, MapPin, UserCircle } from 'lucide-react'
+import { User, Lock, Eye, EyeOff, Mail, Phone, MapPin, UserCircle, RefreshCw, Calculator } from 'lucide-react'
 import { toast } from 'sonner'
 import { FcGoogle } from 'react-icons/fc' 
 
@@ -19,6 +19,46 @@ type FormData = {
   gender: string
   phone: string
   address: string
+}
+
+type CaptchaQuestion = {
+  question: string
+  answer: number
+}
+
+// Generate random math captcha
+function generateCaptcha(): CaptchaQuestion {
+  const operations = ['+', '-', '×']
+  const operation = operations[Math.floor(Math.random() * operations.length)]
+  
+  let num1: number, num2: number, answer: number
+  
+  switch (operation) {
+    case '+':
+      num1 = Math.floor(Math.random() * 20) + 1
+      num2 = Math.floor(Math.random() * 20) + 1
+      answer = num1 + num2
+      break
+    case '-':
+      num1 = Math.floor(Math.random() * 20) + 10
+      num2 = Math.floor(Math.random() * 10) + 1
+      answer = num1 - num2
+      break
+    case '×':
+      num1 = Math.floor(Math.random() * 10) + 1
+      num2 = Math.floor(Math.random() * 10) + 1
+      answer = num1 * num2
+      break
+    default:
+      num1 = 2
+      num2 = 2
+      answer = 4
+  }
+  
+  return {
+    question: `${num1} ${operation} ${num2} = ?`,
+    answer
+  }
 }
 
 export function RegisterPage() {
@@ -34,6 +74,20 @@ export function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  
+  // Captcha state
+  const [captcha, setCaptcha] = useState<CaptchaQuestion>({ question: '', answer: 0 })
+  const [captchaInput, setCaptchaInput] = useState('')
+
+  // Generate captcha on mount
+  const refreshCaptcha = useCallback(() => {
+    setCaptcha(generateCaptcha())
+    setCaptchaInput('')
+  }, [])
+
+  useEffect(() => {
+    refreshCaptcha()
+  }, [refreshCaptcha])
 
   const handleChange = (field: keyof FormData) => (
     e: React.ChangeEvent<HTMLInputElement> | string
@@ -44,6 +98,14 @@ export function RegisterPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    
+    // Validate captcha
+    if (parseInt(captchaInput) !== captcha.answer) {
+      toast.error('Jawaban captcha salah! Silakan coba lagi.')
+      refreshCaptcha()
+      return
+    }
+    
     setLoading(true)
     try {
       const res = await fetch('/controller/user/register', {
@@ -162,6 +224,32 @@ export function RegisterPage() {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input id="address" type="text" value={formData.address} onChange={e => handleChange('address')(e)} className="pl-10" placeholder="Enter your address" />
               </div>
+            </div>
+
+            {/* Captcha */}
+            <div className="space-y-2">
+              <Label htmlFor="captcha">Verifikasi Captcha</Label>
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
+                <Calculator className="h-5 w-5 text-amber-600 shrink-0" />
+                <span className="font-mono text-lg font-semibold text-foreground">{captcha.question}</span>
+                <button 
+                  type="button" 
+                  onClick={refreshCaptcha}
+                  className="ml-auto p-1 hover:bg-muted rounded-md transition-colors"
+                  title="Ganti soal"
+                >
+                  <RefreshCw className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                </button>
+              </div>
+              <Input 
+                id="captcha" 
+                type="number" 
+                required 
+                value={captchaInput} 
+                onChange={e => setCaptchaInput(e.target.value)} 
+                placeholder="Masukkan jawaban" 
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
             </div>
             
             <Button
