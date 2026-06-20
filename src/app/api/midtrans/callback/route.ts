@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // Log incoming payload (debug only) when DEBUG_MIDTRANS_CALLBACK is set
     if (process.env.DEBUG_MIDTRANS_CALLBACK === 'true') {
-      try { console.info('Midtrans callback payload:', JSON.stringify(body).slice(0, 2000)); } catch(e){}
+      try { console.info('Midtrans callback payload:', JSON.stringify(body).slice(0, 2000)); } catch{}
     }
 
     // Midtrans typically sends these fields: order_id, status_code, gross_amount, transaction_status, signature_key

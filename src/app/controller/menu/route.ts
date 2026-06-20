@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Menu } from "@/models/menu";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     console.log("GET /controller/menu - Connecting to database");
     const connected = await connectDB();

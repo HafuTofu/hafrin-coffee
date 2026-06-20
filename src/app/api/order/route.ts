@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Order } from "@/models/order";
-import { Cart } from "@/models/cart";
 
 // GET: return orders for a given userId (query param: ?userId=...)
 export async function GET(req: Request) {

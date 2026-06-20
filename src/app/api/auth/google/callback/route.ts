@@ -129,9 +129,6 @@ export async function GET(req: Request) {
       }
     }
 
-    // Ensure we have a plain JS object for cookie value
-    const userObj = (user as any).toObject ? (user as any).toObject() : (user as any);
-
     // Set session cookie to user id
     const res = NextResponse.redirect(`${origin}/`);
     res.cookies.set('session', String((user as any)._id), {

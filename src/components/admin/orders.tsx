@@ -49,7 +49,7 @@ interface OrdersContentProps {
   onRefresh: () => Promise<void>
 }
 
-export default function OrdersContent({ orders, setOrders, onRefresh }: OrdersContentProps) {
+export default function OrdersContent({ orders, setOrders }: OrdersContentProps) {
   const [orderSearchQuery, setOrderSearchQuery] = useState("")
   const [orderStatusFilter, setOrderStatusFilter] = useState("all")
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)

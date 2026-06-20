@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Menu, type IMenu } from "@/models/menu";
 import mongoose from "mongoose";
@@ -7,7 +7,7 @@ interface LeanMenuDocument extends Omit<IMenu, '_id'> {
   _id: mongoose.Types.ObjectId | string;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     await connectDB();
 

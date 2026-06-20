@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 		await connectDB();
 		const connectedAt = Date.now();
 
-		let cart = await Cart.findOne({ idUser }).populate({
+		const cart = await Cart.findOne({ idUser }).populate({
 			path: 'items.idProduct',
 			model: 'Menu',
 			select: 'name price pic'

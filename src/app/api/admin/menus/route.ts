@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Menu } from "@/models/menu";
-import mongoose from "mongoose";
+
 
 // GET: Fetch all menus for admin dashboard
 export async function GET() {

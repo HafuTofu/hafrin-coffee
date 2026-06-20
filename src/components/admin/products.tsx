@@ -66,7 +66,7 @@ interface ProductsContentProps {
   onRefresh: () => Promise<void>
 }
 
-export default function ProductsContent({ products, setProducts, onRefresh }: ProductsContentProps) {
+export default function ProductsContent({ products, setProducts }: ProductsContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   

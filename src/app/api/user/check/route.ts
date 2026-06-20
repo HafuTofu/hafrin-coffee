@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { User } from "@/models/user";
 import { connectDB } from "@/lib/mongodb";
-import type { UserDocument, SafeUser } from "@/types/user";
+import type { SafeUser } from "@/types/user";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get("session")?.value;
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE() {
   try {
     const resp = NextResponse.json({ success: true });
     resp.cookies.delete("session");

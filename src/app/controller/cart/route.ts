@@ -27,7 +27,7 @@ export async function GET(req: Request) {
 		console.log("GET /controller/cart - Using Mongoose");
 		await connectDB();
 
-		let cart = await Cart.findOne({ idUser }).populate({
+		const cart = await Cart.findOne({ idUser }).populate({
 			path: 'items.idProduct',
 			model: 'Menu',
 			select: 'name price pic'
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
 	try {
 		const body = (await req.json()) as any;
-		const { idUser, idProduct, quantity, customizations } = body;
+		const { idUser, idProduct, quantity } = body;
 
 		if (!isHexObjectId(idUser) || !isHexObjectId(idProduct) || typeof quantity !== "number") {
 			return NextResponse.json({ success: false, error: "Invalid input (idUser, idProduct, quantity required)" }, { status: 400 });

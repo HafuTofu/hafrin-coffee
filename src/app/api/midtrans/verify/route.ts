@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
     try {
       const res = await fetch(statusUrl, { headers: { 'Authorization': `Basic ${auth}`, 'Accept': 'application/json' } });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({})) as any;
 
       if (!res.ok) {
         console.warn('Midtrans verify: status endpoint returned non-OK', res.status, data);

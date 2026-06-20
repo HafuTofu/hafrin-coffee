@@ -25,7 +25,7 @@ interface DashboardOverviewProps {
   stats: DashboardStats
 }
 
-export default function DashboardOverview({ products, orders, stats }: DashboardOverviewProps) {
+export default function DashboardOverview({ orders, stats }: DashboardOverviewProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", { 
       style: "currency", 

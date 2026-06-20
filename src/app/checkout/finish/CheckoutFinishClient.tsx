@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Navbar } from '@/components/landing/navbar'
-import { toast } from 'sonner'
 
 type Props = {
   loadingOnly?: boolean
@@ -24,8 +23,8 @@ export default function CheckoutFinishClient({ loadingOnly = false }: Props) {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [processing, setProcessing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [processing] = useState(true);
+  const [error] = useState<string | null>(null);
 
   useEffect(() => {
     const orderId =
